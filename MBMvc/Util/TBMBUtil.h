@@ -10,7 +10,7 @@
 //
 // Created by <a href="mailto:wentong@taobao.com">文通</a> on 12-11-14 上午10:17.
 //
-
+#import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import "TBMBNotification.h"
 
@@ -61,11 +61,17 @@ extern inline NSString *TBMBProxyHandlerName(NSUInteger key, Class clazz);
 
 extern inline NSMutableSet *TBMBGetAllReceiverHandlerName(Class currentClass, Class rootClass, NSString *prefix);
 
+extern inline NSSet *TBMBInternalListAllReceiverHandlerName(id handler, id <TBMBMessageReceiver> receiver,
+        Class rootClass);
+
 extern inline NSSet *TBMBListAllReceiverHandlerName(id <TBMBMessageReceiver> handler, Class rootClass);
 
 extern inline NSMutableSet *TBMBGetAllCommandHandlerName(Class commandClass, NSString *prefix);
 
 extern inline id TBMBAutoHandlerNotification(id handler, id <TBMBNotification> notification);
+
+extern inline void TBMBInternalAutoHandlerReceiverNotification(id handler, id <TBMBMessageReceiver> receiver,
+        id <TBMBNotification> notification);
 
 extern inline void TBMBAutoHandlerReceiverNotification(id <TBMBMessageReceiver> handler, id <TBMBNotification> notification);
 

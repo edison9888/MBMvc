@@ -14,7 +14,7 @@
 
 #import <Foundation/Foundation.h>
 #import "TBMBUtil.h"
-#import "metamacros.h"
+#import "TBMB_metamacros.h"
 
 //一个observer用来表示 可以用来remove
 @protocol TBMBBindObserver <NSObject>
@@ -77,21 +77,27 @@ extern inline void TBMBUnbindObserver(id <TBMBBindObserver> observer);
 
 //创建一个在bindable dealloc的时候出发的操作
 extern inline id <TBMBBindObserver> TBMBCreateDeallocObserver(id bindable, TBMB_DEALLOC_BLOCK deallocBlock);
+
+//取消一个DeallocObserver的执行
+extern inline void TBMBCancelDeallocObserver(id <TBMBBindObserver> observer);
 #pragma mark  - Marco for Easy Use
 //设置可以自动在delegate被release的时候,置为nil的方法
 #define TBMBAutoNilDelegate(hostType,host,delegateProperty,delegate)                                                  \
     {                                                                                                                 \
         (host).delegateProperty=(delegate);                                                                           \
         __block __unsafe_unretained hostType _____host = (host);                                                      \
-        __block __unsafe_unretained id _____delegate = (delegate);                                                    \
         id <TBMBBindObserver> ___observer=TBMBCreateDeallocObserver((delegate),                                       \
-                               ^(){if(_____host.delegateProperty==_____delegate){                                     \
-                                   TBMB_LOG(@"NeedAutoNil host[%@] delegateProperty[%@] delegate[%@]",                \
-                                                _____host, @#delegateProperty,_____delegate);                         \
-                                   _____host.delegateProperty=nil;}                                                   \
-                                   else{TBMB_LOG(@"NeedAutoNil host[%@] delegateProperty[%@] delegate[%@]",           \
-                                                    _____host, @#delegateProperty,_____delegate);}});                 \
-        TBMBAttachBindObserver(___observer,(host));                                                                   \
+                               ^(){                                                                                   \
+                                   TBMB_LOG(@"NeedAutoNil host[%@] delegateProperty[%@]",                             \
+                                                _____host, @#delegateProperty);                                       \
+                                   _____host.delegateProperty=nil;                                                    \
+                                  });                                                                                 \
+        TBMBCreateDeallocObserver(host,                                                                               \
+            ^() {                                                                                                     \
+                TBMB_LOG(@"NeedAutoNil cancelDeallocObserver[%@]", ___observer);                                      \
+                TBMBCancelDeallocObserver(___observer);                                                               \
+            }                                                                                                         \
+            );                                                                                                        \
     }
 
 
@@ -114,21 +120,21 @@ extern inline id <TBMBBindObserver> TBMBCreateDeallocObserver(id bindable, TBMB_
 #pragma mark  - Auto KeyPath Change Binding
 
 #define  __TBMBAutoKeyPathChangeMethodNameSEP $_$
-#define  __TBMBAutoKeyPathChangeMethodNameSEP_STR @metamacro_stringify(__TBMBAutoKeyPathChangeMethodNameSEP)
+#define  __TBMBAutoKeyPathChangeMethodNameSEP_STR @TBMB_metamacro_stringify(__TBMBAutoKeyPathChangeMethodNameSEP)
 
 #define __TBMBAutoKeyPathChangeMethodName(...)      \
-    metamacro_foreach_concat(,__TBMBAutoKeyPathChangeMethodNameSEP,__VA_ARGS__)
+    TBMB_metamacro_foreach_concat(,__TBMBAutoKeyPathChangeMethodNameSEP,__VA_ARGS__)
 
 
 #define __TBMB_foreach_concat_iter(INDEX, BASE, ARG) .ARG
 
 #define __TBMB_get_self_property(...)                                                                \
-    self metamacro_foreach_cxt_recursive(__TBMB_foreach_concat_iter, , ,__VA_ARGS__)
+    self TBMB_metamacro_foreach_cxt_recursive(__TBMB_foreach_concat_iter, , ,__VA_ARGS__)
 
 //编译时判断字段是否存在
 #ifdef DEBUG
 #define __TBMBTryWhenThisKeyPathChange(...)                                                                            \
-    metamacro_concat(-(void)__$$tryKeyPathChangeOnlyExistInDebugOn_, __TBMBAutoKeyPathChangeMethodName(__VA_ARGS__)) \
+    TBMB_metamacro_concat(-(void)__$$tryKeyPathChangeOnlyExistInDebugOn_, __TBMBAutoKeyPathChangeMethodName(__VA_ARGS__)) \
     {(void)(NO && ((void)__TBMB_get_self_property(__VA_ARGS__), NO));}
 #else
 #define __TBMBTryWhenThisKeyPathChange(...)
@@ -137,5 +143,5 @@ extern inline id <TBMBBindObserver> TBMBCreateDeallocObserver(id bindable, TBMB_
 
 #define TBMBWhenThisKeyPathChange(...)                                                             \
      __TBMBTryWhenThisKeyPathChange(__VA_ARGS__)                                                   \
-    metamacro_concat(-(void)__$$keyPathChange_, __TBMBAutoKeyPathChangeMethodName(__VA_ARGS__))    \
+    TBMB_metamacro_concat(-(void)__$$keyPathChange_, __TBMBAutoKeyPathChangeMethodName(__VA_ARGS__))    \
     :(BOOL)isInit old:(id)old new:(id)new
